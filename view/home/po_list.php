@@ -6,14 +6,23 @@ $filters = [
     'from' => $_GET['from'] ?? '',
     'to' => $_GET['to'] ?? '',
     'date' => $_GET['date'] ?? '',
-    'profile_complete' => $_GET['profile_complete'] ?? '0'
 ];
 
 // Build dynamic query
-$sql = "SELECT bus.id, po.nama_po, rute.kota_asal, rute.kota_tujuan, bus.tanggal_berangkat
+// We need to join with 'kursi' table and group by bus to count available seats
+$sql = "SELECT 
+            bus.id, 
+            po.nama_po, 
+            rute.kota_asal, 
+            rute.kota_tujuan, 
+            bus.tanggal_berangkat,
+            bus.jam_berangkat,
+            bus.harga,
+            COUNT(CASE WHEN kursi.status = 'kosong' THEN 1 END) as kursi_tersedia
         FROM bus
         JOIN po ON bus.po_id = po.id
         JOIN rute ON bus.rute_id = rute.id
+        LEFT JOIN kursi ON bus.id = kursi.bus_id
         WHERE 1=1";
 
 $params = [];
@@ -32,14 +41,17 @@ if (!empty($filters['date'])) {
     $params[] = $filters['date'];
 }
 
+$sql .= " GROUP BY bus.id, po.nama_po, rute.kota_asal, rute.kota_tujuan, bus.tanggal_berangkat, bus.jam_berangkat, bus.harga";
+$sql .= " ORDER BY bus.jam_berangkat ASC";
+
 $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Month names in Indonesian
 $months = [
-    1 => 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    1 => 'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
+    'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'
 ];
 
 // Helper function to format date
@@ -49,35 +61,51 @@ function formatDate($dateString, $months) {
 }
 
 // Generate output
-foreach ($results as $row) {
-    $formattedDate = formatDate($row['tanggal_berangkat'], $months);
-    $bookingUrl = "../booking/booking_detail.php?bus_id={$row['id']}";
-    
-    // Check if profile is complete for different link behavior
-    if ($filters['profile_complete'] === '0') {
-        // Profile not complete - use data attribute for JS handling
-        echo "<div class='po-box' data-booking-url='$bookingUrl' style='cursor: pointer;'>";
-    } else {
-        // Profile complete - direct link
-        echo "<a href='$bookingUrl' style='text-decoration: none; color: inherit;'>";
-        echo "<div class='po-box' style='cursor: pointer;'>";
-    }
-    
-    echo "<strong>{$row['nama_po']}</strong><br>";
-    echo "Dari: {$row['kota_asal']} &rarr; {$row['kota_tujuan']}<br>";
-    echo "Tanggal: $formattedDate";
-    echo "</div>";
-    
-    if ($filters['profile_complete'] !== '0') {
-        echo "</a>";
-    }
-}
+if (!empty($results)) {
+    foreach ($results as $row) {
+        // Skip bus if no seats are available
+        if ($row['kursi_tersedia'] == 0) {
+            continue;
+        }
 
-// Show message if no results
-if (empty($results)) {
-    echo "<div class='po-box' style='text-align: center; color: #666;'>";
-    echo "<strong>Tidak ada bus ditemukan</strong><br>";
-    echo "Coba ubah kriteria pencarian Anda.";
-    echo "</div>";
+        $formattedDate = formatDate($row['tanggal_berangkat'], $months);
+        $bookingUrl = "../booking/booking_detail.php?bus_id={$row['id']}";
+
+        // The entire card is a clickable element
+        echo "<div class='po-card' data-booking-url='{$bookingUrl}'>";
+        echo "    <div class='po-header'>";
+        echo "        <div>";
+        echo "            <div class='po-name'>{$row['nama_po']}</div>";
+        echo "        </div>";
+        echo "        <div class='po-price'>";
+        echo "            <div class='price-amount'>Rp " . number_format($row['harga'], 0, ',', '.') . "</div>";
+        echo "            <div class='price-label'>per orang</div>";
+        echo "        </div>";
+        echo "    </div>";
+
+        echo "    <div class='po-route'>";
+        echo "        <span>{$row['kota_asal']}</span>";
+        echo "        <span class='route-arrow'>&rarr;</span>";
+        echo "        <span>{$row['kota_tujuan']}</span>";
+        echo "    </div>";
+
+        echo "    <div class='po-details'>";
+        echo "        <div class='detail-item'>";
+        echo "            <div class='detail-label'>Berangkat</div>";
+        echo "            <div class='detail-value'>" . date('H:i', strtotime($row['jam_berangkat'])) . "</div>";
+        echo "        </div>";
+        echo "        <div class='detail-item'>";
+        echo "            <div class='detail-label'>Tanggal</div>";
+        echo "            <div class='detail-value'>{$formattedDate}</div>";
+        echo "        </div>";
+        echo "        <div class='detail-item'>";
+        echo "            <div class='detail-label'>Tersedia</div>";
+        echo "            <div class='detail-value'>{$row['kursi_tersedia']} Kursi</div>";
+        echo "        </div>";
+        echo "    </div>";
+        echo "</div>";
+    }
+} else {
+    echo "<div class='alert alert-info alert-full-width'>Tidak ada bus yang tersedia untuk rute dan tanggal yang Anda pilih.</div>";
 }
 ?>

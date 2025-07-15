@@ -8,49 +8,60 @@ unset($_SESSION['errors']);
 unset($_SESSION['old_input']);
 ?>
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
-    <title>Register - BeBuss</title>
-    <link rel="stylesheet" href="../../assets/css/style.css">
-    <style>
-        .error-message {
-            color: #dc3545; /* Merah untuk pesan error */
-            font-size: 0.9em;
-            margin-top: 5px;
-            margin-bottom: 10px;
-            list-style-type: none; /* Hapus bullet point */
-            padding-left: 0;
-        }
-        .error-message li {
-            margin-bottom: 5px;
-        }
-    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daftar - BeBuss</title>
+    <link rel="icon" type="image/x-icon" href="../../assets/images/logo/favicon.ico">
+    <link rel="stylesheet" href="../../assets/css/modern.css">
 </head>
 <body>
-    <div class="container">
-        <h2>Daftar Akun BeBuss</h2>
+    <div class="auth-wrapper">
+        <div class="card auth-card">
+            <div class="auth-header">
+                <a href="../../index.php" class="brand">
+                    <img src="../../assets/images/logo/logo.png" alt="BeBuss Logo" class="auth-logo">
+                    <span class="brand-text">BeBuss</span>
+                </a>
+                <h1>Buat Akun Baru</h1>
+                <p>Bergabunglah dengan kami untuk perjalanan yang lebih mudah.</p>
+            </div>
 
-        <?php if (!empty($errors)): // Tampilkan pesan error jika ada ?>
-            <ul class="error-message">
-                <?php foreach ($errors as $error): ?>
-                    <li><?= htmlspecialchars($error) ?></li>
-                <?php endforeach; ?>
-            </ul>
-        <?php endif; ?>
+            <?php if (!empty($errors)): ?>
+                <div class="alert alert-danger">
+                    <span class="alert-icon">⚠️</span>
+                    <div>
+                        <?php foreach ($errors as $error): ?>
+                            <div><?= htmlspecialchars($error) ?></div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            <?php endif; ?>
 
-        <form method="POST" action="../../controller/AuthController.php">
-            <label for="email">Email</label>
-            <input type="email" name="email" id="email" value="<?= htmlspecialchars($old_input['email']) ?>" required>
+            <form method="POST" action="../../controller/AuthController.php">
+                <div class="form-group">
+                    <label for="email" class="form-label">Email</label>
+                    <input type="email" name="email" id="email" class="form-control" value="<?= htmlspecialchars($old_input['email'] ?? '') ?>" required placeholder="contoh@email.com">
+                </div>
 
-            <label for="password">Password</label>
-            <input type="password" name="password" id="password" required>
+                <div class="form-group">
+                    <label for="password" class="form-label">Password</label>
+                    <input type="password" name="password" id="password" class="form-control" required placeholder="Minimal 8 karakter">
+                </div>
 
-            <label for="confirm">Ulangi Password</label>
-            <input type="password" name="confirm" id="confirm" required>
+                <div class="form-group">
+                    <label for="confirm" class="form-label">Ulangi Password</label>
+                    <input type="password" name="confirm" id="confirm" class="form-control" required placeholder="Ketik ulang password Anda">
+                </div>
 
-            <button type="submit" class="btn">Daftar</button>
-        </form>
-        <p>Sudah punya akun? <a href="login.php">Login di sini</a></p>
+                <button type="submit" class="btn btn-primary btn-full">Daftar</button>
+            </form>
+
+            <div class="auth-footer">
+                <p>Sudah punya akun? <a href="login.php">Login di sini</a></p>
+            </div>
+        </div>
     </div>
 </body>
 </html>

@@ -25,12 +25,15 @@ unset($_SESSION['success_message']);
 unset($_SESSION['error_message']);
 
 // Ambil data pemesanan
-$stmt = $pdo->prepare("SELECT pemesanan.*, bus.tanggal_berangkat, bus.jam_berangkat, po.nama_po, rute.kota_asal, rute.kota_tujuan 
+$stmt = $pdo->prepare("SELECT pemesanan.*, bus.tanggal_berangkat, bus.jam_berangkat, po.nama_po, rute.kota_asal, rute.kota_tujuan,
+                       COUNT(detail_kursi_pesan.kursi_id) as jumlah_penumpang
                        FROM pemesanan 
                        JOIN bus ON pemesanan.bus_id = bus.id 
                        JOIN po ON bus.po_id = po.id 
                        JOIN rute ON bus.rute_id = rute.id 
-                       WHERE pemesanan.id = ? AND pemesanan.user_id = ?");
+                       LEFT JOIN detail_kursi_pesan ON pemesanan.id = detail_kursi_pesan.pemesanan_id
+                       WHERE pemesanan.id = ? AND pemesanan.user_id = ?
+                       GROUP BY pemesanan.id");
 $stmt->execute([$pemesanan_id, $user_id]);
 $data = $stmt->fetch();
 
@@ -67,191 +70,185 @@ if ($waktu_sekarang_obj < $waktu_kedaluwarsa_obj) {
     $interval = $waktu_sekarang_obj->diff($waktu_kedaluwarsa_obj);
     $sisa_waktu_detik = $interval->days * 86400 + $interval->h * 3600 + $interval->i * 60 + $interval->s;
 }
-// Tidak ada lagi output debugging di HTML
+
+// Include navbar
+include '../components/navbar.php';
 ?>
 
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Detail Pemesanan - BeBuss</title>
-    <link rel="stylesheet" href="../../assets/css/style.css">
-    <style>
-        .detail-box {
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            width: 80%;
-            margin: auto;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
-
-        .detail-box h2 {
-            margin-bottom: 20px;
-        }
-
-        .detail-item {
-            margin-bottom: 10px;
-        }
-
-        .btn-group {
-            margin-top: 30px;
-        }
-
-        .btn-group form {
-            display: inline;
-            margin-right: 10px; /* Memberi sedikit jarak antar tombol */
-        }
-        .btn-group .btn {
-            margin: 0; /* Override margin dari .btn global jika ada */
-        }
-        /* Styling untuk pesan sukses dan error */
-        .success-message-alert {
-            color: #28a745;
-            font-size: 0.9em;
-            margin-top: 5px;
-            margin-bottom: 10px;
-            text-align: center;
-            background-color: #e6ffe6;
-            border: 1px solid #28a745;
-            padding: 10px;
-            border-radius: 5px;
-        }
-        .error-message-alert {
-            color: #dc3545;
-            font-size: 0.9em;
-            margin-top: 5px;
-            margin-bottom: 10px;
-            text-align: center;
-            background-color: #ffe6e6;
-            border: 1px solid #dc3545;
-            padding: 10px;
-            border-radius: 5px;
-        }
-        /* Styling untuk countdown timer */
-        .countdown-timer {
-            font-size: 1.2em;
-            font-weight: bold;
-            color: #d9534f; /* Merah untuk menarik perhatian */
-            margin-top: 15px;
-            text-align: center;
-            padding: 10px;
-            border: 1px dashed #d9534f;
-            border-radius: 5px;
-            background-color: #fefefe;
-        }
-        .countdown-timer.expired {
-            color: #5cb85c; /* Hijau jika sudah kedaluwarsa */
-            border-color: #5cb85c;
-        }
-    </style>
+    <link rel="stylesheet" href="../../assets/css/modern.css">
 </head>
 <body>
-    <?php include '../components/navbar.php'; ?>
-<div class="container">
-    <?php if (!empty($success_message)): ?>
-        <p class="success-message-alert"><?= htmlspecialchars($success_message) ?></p>
-    <?php endif; ?>
-    <?php if (!empty($error_message)): ?>
-        <p class="error-message-alert"><?= htmlspecialchars($error_message) ?></p>
-    <?php endif; ?>
-    <div class="detail-box">
-        <h2>Detail Pemesanan</h2>
+    <main class="container history-detail-container">
+        <div class="page-header">
+            <a href="history_index.php" class="btn btn-secondary">&larr; Kembali ke Riwayat</a>
+        </div>
 
-        <div class="detail-item"><strong>PO:</strong> <?= $data['nama_po'] ?></div>
-        <div class="detail-item"><strong>Rute:</strong> <?= $data['kota_asal'] ?> &rarr; <?= $data['kota_tujuan'] ?></div>
-        <div class="detail-item"><strong>Tanggal Berangkat:</strong> <?= date('d-m-Y', strtotime($data['tanggal_berangkat'])) ?></div>
-        <div class="detail-item"><strong>Jam Berangkat:</strong> <?= $data['jam_berangkat'] ?></div>
-        <div class="detail-item"><strong>Titik Naik:</strong> <?= $data['lokasi_naik'] ?></div>
-        <div class="detail-item"><strong>Kursi:</strong> <?= $kursi_str ?></div>
-        <div class="detail-item"><strong>Total Harga:</strong> Rp <?= number_format($data['total_harga'], 0, ',', '.') ?></div>
-        <div class="detail-item"><strong>Status:</strong> <span id="pemesananStatus"><?= ucfirst($data['status']) ?></span></div>
-
-        <?php if ($data['status'] === 'aktif'): ?>
-            <div class="countdown-timer">
-                Sisa waktu pembayaran: <span id="countdown"></span>
-            </div>
+        <?php if ($success_message): ?>
+            <div class="alert alert-success"><?= htmlspecialchars($success_message) ?></div>
+        <?php endif; ?>
+        <?php if ($error_message): ?>
+            <div class="alert alert-danger"><?= htmlspecialchars($error_message) ?></div>
         <?php endif; ?>
 
-        <div class="btn-group">
-            <?php if ($data['status'] === 'aktif'): ?>
-                <form id="formBatalkan" method="post" action="batalkan.php" onsubmit="return confirm('Apakah Anda yakin ingin membatalkan pemesanan ini? Kursi akan dikosongkan kembali.')">
-                    <input type="hidden" name="id" value="<?= $data['id'] ?>">
-                    <button type="submit" class="btn" id="btnBatalkan">Batalkan</button>
-                </form>
-                <a href="bayar_dummy.php?id=<?= $data['id'] ?>" class="btn" id="btnBayar">Bayar</a>
-            <?php endif; ?>
+        <div class="detail-grid">
+            <div class="main-content">
+                <div class="detail-card">
+                    <div class="detail-header">
+                        <h2>Detail Perjalanan</h2>
+                        <?php
+                        $status = strtolower($data['status']);
+                        $status_class = 'status-' . $status;
+                        ?>
+                        <span class="status-badge <?= $status_class ?>"><?= htmlspecialchars(ucfirst($status)) ?></span>
+                    </div>
+                    <div class="detail-list">
+                        <div class="detail-item">
+                            <span class="label">Operator Bus</span>
+                            <span class="value"><?= htmlspecialchars($data['nama_po']) ?></span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="label">Rute</span>
+                            <span class="value"><?= htmlspecialchars($data['kota_asal']) ?> → <?= htmlspecialchars($data['kota_tujuan']) ?></span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="label">Tanggal Berangkat</span>
+                            <span class="value"><?= date('l, d F Y', strtotime($data['tanggal_berangkat'])) ?></span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="label">Jam Berangkat</span>
+                            <span class="value"><?= date('H:i', strtotime($data['jam_berangkat'])) ?> WIB</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="label">Lokasi Naik</span>
+                            <span class="value"><?= htmlspecialchars($data['lokasi_naik']) ?></span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="label">Nomor Kursi</span>
+                            <span class="value"><?= htmlspecialchars($kursi_str) ?></span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="label">Jumlah Penumpang</span>
+                            <span class="value"><?= htmlspecialchars($data['jumlah_penumpang']) ?> orang</span>
+                        </div>
+                    </div>
+                </div>
 
-            <?php if ($data['status'] === 'selesai'): ?>
-                <a href="cetak_dummy.php?id=<?= $data['id'] ?>" class="btn">Cetak Bukti</a>
-            <?php endif; ?>
+                <div class="detail-card">
+                    <div class="detail-header">
+                        <h2>Detail Pembayaran</h2>
+                    </div>
+                    <div class="detail-list">
+                        <div class="detail-item">
+                            <span class="label">Kode Pemesanan</span>
+                            <span class="value">BP-<?= str_pad($data['id'], 6, '0', STR_PAD_LEFT) ?></span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="label">Tanggal Pesan</span>
+                            <span class="value"><?= date('d M Y, H:i', strtotime($data['tanggal_pesan'])) ?></span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="label">Total Pembayaran</span>
+                            <span class="value">Rp <?= number_format($data['total_harga'], 0, ',', '.') ?></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-            <?php if ($data['status'] === 'batal'): ?>
-                <form method="post" action="hapus_pemesanan.php" onsubmit="return confirm('PERINGATAN: Menghapus pemesanan akan menghilangkan data ini secara permanen dari riwayat Anda. Apakah Anda yakin?')">
-                    <input type="hidden" name="id" value="<?= $data['id'] ?>">
-                    <button type="submit" class="btn" style="background-color: #dc3545;">Hapus</button>
-                </form>
-            <?php endif; ?>
+            <aside class="sidebar">
+                <?php if ($data['status'] == 'aktif' && $sisa_waktu_detik > 0): ?>
+                    <div class="actions-card">
+                        <h4>Selesaikan Pembayaran</h4>
+                        <div id="countdown" class="countdown-timer"></div>
+                        <form action="bayar_dummy.php" method="POST" class="action-form">
+                            <input type="hidden" name="pemesanan_id" value="<?= $pemesanan_id ?>">
+                            <button type="submit" class="btn btn-primary">Bayar Sekarang</button>
+                        </form>
+                    </div>
+                <?php endif; ?>
+
+                <div class="actions-card">
+                    <h4>Aksi Lainnya</h4>
+                    <?php if ($data['status'] == 'selesai'): ?>
+                        <form action="cetak_dummy.php" method="POST" target="_blank" rel="noopener noreferrer" class="action-form print-form">
+                            <input type="hidden" name="pemesanan_id" value="<?= $pemesanan_id ?>">
+                            <button type="submit" class="btn btn-primary print-btn">
+                                📄 Cetak E-Tiket
+                            </button>
+                        </form>
+                    <?php endif; ?>
+
+                    <?php if ($data['status'] == 'aktif'): ?>
+                        <form action="batalkan.php" method="POST" class="action-form cancel-form" data-confirm="Apakah Anda yakin ingin membatalkan pesanan ini?">
+                            <input type="hidden" name="pemesanan_id" value="<?= $pemesanan_id ?>">
+                            <button type="submit" class="btn btn-danger">Batalkan Pesanan</button>
+                        </form>
+                    <?php endif; ?>
+
+                    <?php if ($data['status'] == 'batal'): ?>
+                         <form action="hapus_pemesanan.php" method="POST" class="action-form delete-form" data-confirm="Menghapus riwayat ini bersifat permanen. Yakin?">
+                            <input type="hidden" name="pemesanan_id" value="<?= $pemesanan_id ?>">
+                            <button type="submit" class="btn btn-danger">Hapus Riwayat</button>
+                        </form>
+                    <?php endif; ?>
+                </div>
+            </aside>
         </div>
-    </div>
-</div>
+    </main>
 
-<script>
-    // Ambil sisa waktu dari PHP (dalam detik)
-    let sisaWaktuDetik = <?= $sisa_waktu_detik ?>;
-    const pemesananStatusElement = document.getElementById('pemesananStatus');
-    const countdownElement = document.getElementById('countdown');
-    const btnBayar = document.getElementById('btnBayar');
-    const btnBatalkan = document.getElementById('btnBatalkan');
-    const formBatalkan = document.getElementById('formBatalkan');
-    const btnGroup = document.querySelector('.btn-group');
+    <?php if ($data['status'] == 'aktif' && $sisa_waktu_detik > 0): ?>
+    <script>
+        // Countdown timer script
+        const countdownElement = document.getElementById('countdown');
+        let timeLeft = <?= $sisa_waktu_detik ?>;
 
-    let countdownInterval;
-
-    // Fungsi untuk memformat waktu ke MM:SS (karena hanya 10 menit, HH tidak diperlukan)
-    function formatTime(totalSeconds) {
-        const minutes = Math.floor(totalSeconds / 60);
-        const seconds = totalSeconds % 60;
-
-        const formattedMinutes = minutes.toString().padStart(2, '0');
-        const formattedSeconds = seconds.toString().padStart(2, '0');
-
-        return `${formattedMinutes}:${formattedSeconds}`; 
-    }
-
-    function updateCountdown() {
-        if (sisaWaktuDetik <= 0) {
-            clearInterval(countdownInterval);
-            if (countdownElement) {
-                countdownElement.textContent = "Waktu habis!";
-                countdownElement.parentElement.classList.add('expired');
+        function updateCountdown() {
+            if (timeLeft <= 0) {
+                countdownElement.innerHTML = "Waktu pembayaran habis.";
+                // Optional: auto-refresh the page
+                setTimeout(() => window.location.reload(), 2000);
+                return;
             }
-            pemesananStatusElement.textContent = "Batal (Waktu Habis)";
+
+            const minutes = Math.floor(timeLeft / 60);
+            let seconds = timeLeft % 60;
+            seconds = seconds < 10 ? '0' + seconds : seconds;
+
+            countdownElement.innerHTML = `Sisa Waktu: ${minutes}:${seconds}`;
+            timeLeft--;
+        }
+
+        setInterval(updateCountdown, 1000);
+        updateCountdown(); // Initial call
+        
+        // Add event listeners for forms with confirm dialogs
+        document.addEventListener('DOMContentLoaded', function() {
+            const cancelForm = document.querySelector('.cancel-form');
+            if (cancelForm) {
+                cancelForm.addEventListener('submit', function(e) {
+                    const confirmMsg = this.getAttribute('data-confirm');
+                    if (!confirm(confirmMsg)) {
+                        e.preventDefault();
+                    }
+                });
+            }
             
-            if (btnBayar) btnBayar.style.display = 'none';
-            if (formBatalkan) formBatalkan.style.display = 'none';
-
-            setTimeout(() => {
-                location.reload(); 
-            }, 2000);
-            
-            return;
-        }
-
-        if (countdownElement) {
-            countdownElement.textContent = formatTime(sisaWaktuDetik);
-        }
-        sisaWaktuDetik--;
-    }
-
-    // Hanya jalankan countdown jika status pemesanan adalah 'aktif'
-    if (pemesananStatusElement && pemesananStatusElement.textContent.toLowerCase().includes('aktif')) {
-        updateCountdown();
-        countdownInterval = setInterval(updateCountdown, 1000);
-    } else {
-        if (countdownElement && countdownElement.parentElement) {
-            countdownElement.parentElement.style.display = 'none';
-        }
-    }
-</script>
+            const deleteForm = document.querySelector('.delete-form');
+            if (deleteForm) {
+                deleteForm.addEventListener('submit', function(e) {
+                    const confirmMsg = this.getAttribute('data-confirm');
+                    if (!confirm(confirmMsg)) {
+                        e.preventDefault();
+                    }
+                });
+            }
+        });
+    </script>
+    <?php endif; ?>
 </body>
 </html>

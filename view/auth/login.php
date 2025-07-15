@@ -10,61 +10,62 @@ unset($_SESSION['old_login_email']);
 unset($_SESSION['success_message']);
 ?>
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - BeBuss</title>
-    <link rel="stylesheet" href="../../assets/css/style.css">
-    <style>
-        .error-message {
-            color: #dc3545; /* Merah untuk pesan error */
-            font-size: 0.9em;
-            margin-top: 5px;
-            margin-bottom: 10px;
-            list-style-type: none; /* Hapus bullet point */
-            padding-left: 0;
-        }
-        .error-message li {
-            margin-bottom: 5px;
-        }
-        .success-message {
-            color: #28a745; /* Hijau untuk pesan sukses */
-            font-size: 0.9em;
-            margin-top: 5px;
-            margin-bottom: 10px;
-            text-align: center;
-            background-color: #e6ffe6;
-            border: 1px solid #28a745;
-            padding: 10px;
-            border-radius: 5px;
-        }
-    </style>
+    <link rel="icon" type="image/x-icon" href="../../assets/images/logo/favicon.ico">
+    <link rel="stylesheet" href="../../assets/css/modern.css">
 </head>
 <body>
-    <div class="container">
-        <h2>Login BeBuss</h2>
+    <div class="auth-wrapper">
+        <div class="card auth-card">
+            <div class="auth-header">
+                <a href="../../index.php" class="brand">
+                    <img src="../../assets/images/logo/logo.png" alt="BeBuss Logo" class="auth-logo">
+                    <span class="brand-text">BeBuss</span>
+                </a>
+                <h1>Selamat Datang Kembali</h1>
+                <p>Masuk untuk melanjutkan perjalanan Anda.</p>
+            </div>
 
-        <?php if (!empty($success_message)): // Tampilkan pesan sukses jika ada ?>
-            <p class="success-message"><?= htmlspecialchars($success_message) ?></p>
-        <?php endif; ?>
+            <?php if (!empty($success_message)): ?>
+                <div class="alert alert-success">
+                    <span class="alert-icon">✅</span>
+                    <span><?= htmlspecialchars($success_message) ?></span>
+                </div>
+            <?php endif; ?>
 
-        <?php if (!empty($errors)): // Tampilkan pesan error jika ada ?>
-            <ul class="error-message">
-                <?php foreach ($errors as $error): ?>
-                    <li><?= htmlspecialchars($error) ?></li>
-                <?php endforeach; ?>
-            </ul>
-        <?php endif; ?>
+            <?php if (!empty($errors)): ?>
+                <div class="alert alert-danger">
+                    <span class="alert-icon">⚠️</span>
+                    <div>
+                        <?php foreach ($errors as $error): ?>
+                            <div><?= htmlspecialchars($error) ?></div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            <?php endif; ?>
 
-        <form method="POST" action="../../controller/LoginController.php">
-            <label for="email">Email</label>
-            <input type="email" name="email" id="email" value="<?= htmlspecialchars($old_email) ?>" required>
+            <form method="POST" action="../../controller/LoginController.php">
+                <div class="form-group">
+                    <label for="email" class="form-label">Email</label>
+                    <input type="email" name="email" id="email" class="form-control" value="<?= htmlspecialchars($old_email) ?>" required placeholder="contoh@email.com">
+                </div>
 
-            <label for="password">Password</label>
-            <input type="password" name="password" id="password" required>
+                <div class="form-group">
+                    <label for="password" class="form-label">Password</label>
+                    <input type="password" name="password" id="password" class="form-control" required placeholder="Masukkan password Anda">
+                </div>
 
-            <button type="submit" class="btn">Login</button>
-        </form>
-        <p>Belum punya akun? <a href="register.php">Daftar sekarang</a></p>
+                <button type="submit" class="btn btn-primary btn-full">Login</button>
+            </form>
+
+            <div class="auth-footer">
+                <p>Belum punya akun? <a href="register.php">Daftar sekarang</a></p>
+            </div>
+        </div>
     </div>
 </body>
 </html>

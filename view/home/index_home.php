@@ -90,246 +90,85 @@ $date = $_GET['date'] ?? '';
 ?>
 
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
-    <title>Home - BeBuss</title>
-    <link rel="stylesheet" href="../../assets/css/style.css">
-    <style>
-        /* Layout */
-        .wrapper {
-            display: flex;
-            align-items: flex-start;
-            padding: 20px;
-        }
-
-        .sidebar {
-            position: sticky;
-            top: 20px;
-            width: 250px;
-            background: #f4f4f4;
-            padding: 20px;
-            border-radius: 8px;
-            height: fit-content;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-
-        .sidebar input, .sidebar label, .sidebar select {
-            display: block;
-            width: 100%;
-            margin-bottom: 15px;
-            box-sizing: border-box;
-        }
-        
-        .content {
-            flex: 1;
-            max-height: 600px;
-            overflow-y: auto;
-            padding-left: 30px;
-        }
-
-        /* Cards */
-        .po-box, .dashboard-info-card {
-            padding: 20px;
-            margin-bottom: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-
-        .po-box {
-            background-color: #e0e0e0;
-            border-radius: 12px;
-            transition: all 0.3s ease;
-        }
-
-        .po-box:hover {
-            background-color: #d0d0d0;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
-        }
-
-        .dashboard-info-card {
-            background-color: #fff;
-            padding: 15px;
-            margin-top: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        .welcome-dashboard-section {
-            background-color: #007bff;
-            color: white;
-            padding: 25px;
-            border-radius: 8px;
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        /* Typography */
-        .welcome-dashboard-section h2 {
-            color: white;
-            margin: 0 0 10px 0;
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-            max-width: 100%;
-        }
-
-        .dashboard-info-card h3 {
-            margin-top: 0;
-            color: #333;
-            font-size: 1.1em;
-        }
-
-        .dashboard-info-card p {
-            font-size: 1.8em;
-            font-weight: bold;
-            color: #007bff;
-            margin: 5px 0 0;
-        }
-
-        .dashboard-info-card small {
-            font-size: 0.8em;
-            color: #666;
-            display: block;
-            margin-top: 5px;
-        }
-
-        .dashboard-info-card .action-message {
-            font-size: 0.9em;
-            color: #dc3545;
-            margin-top: 10px;
-            font-weight: bold;
-        }
-
-        /* Alerts */
-        .alert-info {
-            background-color: #e0f7fa;
-            color: #007bff;
-            padding: 10px;
-            border-radius: 5px;
-            margin-bottom: 15px;
-            border: 1px solid #007bff;
-        }
-        /* Styling untuk Autocomplete Suggestions */
-        .autocomplete-container {
-            position: relative;
-            width: 100%;
-            margin-bottom: 15px;
-        }
-        .autocomplete-list {
-            position: absolute;
-            border: 1px solid #d4d4d4;
-            border-bottom: none;
-            border-top: none;
-            z-index: 99;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background-color: #f9f9f9;
-            max-height: 200px;
-            overflow-y: auto;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        .autocomplete-list-item {
-            padding: 10px;
-            cursor: pointer;
-            background-color: #fff;
-            border-bottom: 1px solid #d4d4d4;
-            text-align: left;
-        }
-        .autocomplete-list-item:hover {
-            background-color: #e9e9e9;
-        }
-        .autocomplete-list-item.active {
-            background-color: #007bff;
-            color: white;
-        }
-
-        /* Modal Styling */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background-color: rgba(0,0,0,0.4);
-        }
-        .modal-content {
-            background-color: #fefefe;
-            margin: 15% auto;
-            padding: 20px;
-            border: none;
-            border-radius: 8px;
-            width: 90%;
-            max-width: 500px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-        }
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid #eee;
-        }
-        .modal-header h3 {
-            margin: 0;
-            color: #dc3545;
-        }
-        .close {
-            color: #aaa;
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
-            line-height: 1;
-        }
-        .close:hover,
-        .close:focus {
-            color: #000;
-        }
-        .modal-body {
-            margin-bottom: 20px;
-        }
-        .modal-footer {
-            text-align: right;
-        }
-        .btn-complete-profile {
-            background-color: #ffc107;
-            color: #212529;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            text-decoration: none;
-            display: inline-block;
-            font-size: 14px;
-            font-weight: bold;
-            margin-right: 10px;
-            transition: background-color 0.3s ease;
-        }
-        .btn-complete-profile:hover {
-            background-color: #e0a800;
-            text-decoration: none;
-        }
-        .btn-cancel {
-            background-color: #6c757d;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        .btn-cancel:hover {
-            background-color: #5a6268;
-        }
-    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pesan Tiket Bus Online - BeBuss</title>
+    <link rel="icon" type="image/x-icon" href="../../assets/images/logo/favicon.ico">
+    <link rel="stylesheet" href="../../assets/css/modern.css">
 </head>
 <body>
     <?php include '../components/navbar.php'; ?>
 
-    <div id="profileModal" class="modal">
+    <!-- Hero Section -->
+    <header class="hero-section">
+        <div class="hero-container">
+            <div class="hero-content">
+                <h1 class="hero-title">
+                    Temukan Perjalanan <span class="highlight">Impianmu</span>
+                </h1>
+                <p class="hero-subtitle">
+                    Pesan tiket bus antar kota dengan mudah dan cepat! Jelajahi keindahan nusantara dengan nyaman bersama BeBuss - platform booking terpercaya untuk perjalanan impianmu.
+                </p>
+            </div>
+            <div class="hero-image">
+                <!-- Placeholder - Ganti dengan tag img untuk gambar asli -->
+                <!-- <div class="hero-image-placeholder">
+                    <div class="icon">🚌</div>
+                    <div>Tempat untuk Gambar Bus</div>
+                    <small class="hero-image-note">Upload gambar ke: assets/images/hero/</small>
+                </div> -->
+                
+                <!-- Uncomment dan sesuaikan path setelah upload gambar: -->
+                <img src="../../assets/images/hero/bus-hero.jpg" alt="BeBuss - Perjalanan Impianmu">
+               
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- Search Section -->
+        <section class="search-section">
+            <div class="search-form-container">
+                <form class="search-form" id="searchForm" onsubmit="return false;">
+                    <div class="form-group">
+                        <label for="from" class="form-label">Kota Asal</label>
+                        <div class="autocomplete-container">
+                            <input type="text" id="from" name="from" class="form-control" value="<?= htmlspecialchars($from) ?>" placeholder="Contoh: Padang">
+                            <div id="from-autocomplete-list" class="autocomplete-list"></div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="to" class="form-label">Kota Tujuan</label>
+                        <div class="autocomplete-container">
+                            <input type="text" id="to" name="to" class="form-control" value="<?= htmlspecialchars($to) ?>" placeholder="Contoh: Jakarta">
+                            <div id="to-autocomplete-list" class="autocomplete-list"></div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="date" class="form-label">Tanggal Berangkat</label>
+                        <input type="date" id="date" name="date" class="form-control" value="<?= htmlspecialchars($date) ?>">
+                    </div>
+                    <div class="form-group">
+                        <button type="button" class="btn btn-primary btn-full search-bus-btn">
+                            🚌 Cari Bus
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <!-- PO List Section -->
+        <section class="po-list-section">
+            <div class="grid" id="result-area">
+                <!-- Hasil pencarian akan dimuat di sini oleh JavaScript -->
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal untuk alert profil belum lengkap -->
+    <div id="profileModal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
                 <h3>⚠️ Profil Belum Lengkap</h3>
@@ -337,79 +176,16 @@ $date = $_GET['date'] ?? '';
             </div>
             <div class="modal-body">
                 <p>Anda perlu melengkapi profil sebelum dapat memesan tiket.</p>
-                <p><strong>Data yang diperlukan:</strong></p>
-                <ul>
-                    <li>Nama Lengkap</li>
-                    <li>Nomor Handphone</li>
-                    <li>Jenis Kelamin</li>
-                </ul>
+                <p><strong>Data yang diperlukan:</strong> Nama Lengkap, Nomor Handphone, dan Jenis Kelamin.</p>
                 <p>Silakan lengkapi profil Anda terlebih dahulu.</p>
             </div>
             <div class="modal-footer">
-                <a href="../auth/complete_profile.php" class="btn-complete-profile">
-                    📝 Lengkapi Profil
-                </a>
-                <button type="button" class="btn-cancel" onclick="modal.close()">Tutup</button>
+                <a href="../auth/complete_profile.php" class="btn btn-primary">Lengkapi Profil</a>
+                <button type="button" class="btn btn-secondary modal-close-btn">Tutup</button>
             </div>
         </div>
     </div>
 
-    <div class="wrapper">
-        <div class="sidebar">
-            <div class="welcome-dashboard-section">
-                <h2>Halo, <?php 
-                    // Prioritas: nama_lengkap, jika kosong gunakan bagian pertama email, jika tidak ada gunakan "Pengguna"
-                    if (!empty($user['nama_lengkap'])) {
-                        echo htmlspecialchars($user['nama_lengkap']);
-                    } else {
-                        // Ambil bagian pertama email (sebelum @) dan buat title case
-                        $email_parts = explode('@', $user['email']);
-                        $username = ucfirst($email_parts[0]);
-                        echo htmlspecialchars($username);
-                    }
-                ?>!</h2>
-            </div>
-            
-            <?php if (!empty($cancelled_ticket_ids)): ?>
-                <div class="alert-info" style="background-color: #ffe0b2; border-color: #ff9800; color: #e65100;">
-                    <p><strong>Pemberitahuan:</strong> Tiket dengan ID berikut telah otomatis dibatalkan karena batas waktu pembayaran habis: <?= implode(', ', $cancelled_ticket_ids) ?>. Silakan pesan ulang jika masih ingin bepergian.</p>
-                </div>
-            <?php endif; ?>
-
-            <div class="dashboard-info-card">
-                <h3>Tiket Aktif Anda</h3>
-                <p><?= $total_tiket_aktif ?></p>
-                <small><i>(belum dibayar)</i></small>
-                <?php if ($total_tiket_aktif > 0): ?>
-                    <div class="action-message">
-                        Segera lakukan pembayaran untuk mengamankan tiket Anda!
-                    </div>
-                <?php endif; ?>
-            </div>
-
-            <hr style="margin: 25px 0; border: 0; border-top: 1px solid #ccc;">
-
-            <h3>Filter Pencarian</h3>
-            <label>Dari (Kota Asal):</label>
-            <div class="autocomplete-container">
-                <input type="text" id="from" value="<?= htmlspecialchars($from) ?>" placeholder="Contoh: Padang">
-                <div id="from-autocomplete-list" class="autocomplete-list"></div>
-            </div>
-
-            <label>Ke (Kota Tujuan):</label>
-            <div class="autocomplete-container">
-                <input type="text" id="to" value="<?= htmlspecialchars($to) ?>" placeholder="Contoh: Jakarta">
-                <div id="to-autocomplete-list" class="autocomplete-list"></div>
-            </div>
-
-            <label>Tanggal Berangkat:</label>
-            <input type="date" id="date" value="<?= htmlspecialchars($date) ?>">
-        </div>
-
-        <div class="content" id="result-area">
-            <div class="po-box">Memuat daftar bus...</div>
-        </div>
-    </div>
     <script>
     // DOM Elements - Organized structure
     const elements = {
@@ -445,19 +221,26 @@ $date = $_GET['date'] ?? '';
             const params = new URLSearchParams({
                 from: elements.fromInput.value,
                 to: elements.toInput.value,
-                date: elements.dateInput.value,
-                profile_complete: config.profileComplete ? '1' : '0'
+                date: elements.dateInput.value
             });
+
+            // Show a loading indicator
+            elements.resultArea.innerHTML = '<div class="alert alert-info alert-full-width">Mencari bus...</div>';
 
             fetch(`po_list.php?${params}`)
                 .then(response => {
                     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                     return response.text();
                 })
-                .then(data => elements.resultArea.innerHTML = data)
+                .then(data => {
+                    elements.resultArea.innerHTML = data;
+                    // After loading data, re-check if the click handler needs to be attached
+                    // The old handlePOSelection is removed because the resultArea is overwritten
+                    // A better approach is event delegation, which is already in use.
+                })
                 .catch(error => {
                     console.error('Error fetching PO list:', error);
-                    elements.resultArea.innerHTML = '<div class="po-box" style="color: red;">Gagal memuat daftar bus. Periksa koneksi atau coba lagi.</div>';
+                    elements.resultArea.innerHTML = '<div class="alert alert-danger alert-full-width">Gagal memuat daftar bus. Periksa koneksi atau coba lagi.</div>';
                 });
         }, config.debounceDelay);
     }
@@ -466,7 +249,10 @@ $date = $_GET['date'] ?? '';
     const autocomplete = {
         closeAll: (exceptElement) => {
             document.querySelectorAll('.autocomplete-list').forEach(list => {
-                if (list !== exceptElement) list.innerHTML = '';
+                if (list !== exceptElement) {
+                    list.innerHTML = '';
+                    list.style.display = 'none';
+                }
             });
         },
 
@@ -548,10 +334,15 @@ $date = $_GET['date'] ?? '';
                             
                             listElement.appendChild(item);
                         });
+                        
+                        // Show the dropdown if there are suggestions
+                        if (suggestions.length > 0) {
+                            listElement.style.display = 'block';
+                        }
                     })
                     .catch(error => {
                         console.error('Error fetching autocomplete suggestions:', error);
-                        listElement.innerHTML = `<div style="padding: 10px; color: red;">Error: ${error.message}. Cek console.</div>`;
+                        listElement.innerHTML = `<div class="error-message">Error: ${error.message}. Cek console.</div>`;
                     });
             }, config.autocompleteDelay);
             
@@ -594,17 +385,19 @@ $date = $_GET['date'] ?? '';
         });
     }
 
-    // Enhanced PO selection handler (for clicking on PO boxes in resultArea)
-    function handlePOSelection() {
+    // This function now correctly handles clicks on dynamically loaded content
+    // by attaching the listener to a static parent (`resultArea`).
+    function setupPOSelectionListener() {
         elements.resultArea.addEventListener('click', function(e) {
-            const poBox = e.target.closest('.po-box');
-            if (poBox && poBox.hasAttribute('data-booking-url')) {
-                const bookingUrl = poBox.getAttribute('data-booking-url');
-                
+            const poCard = e.target.closest('.po-card');
+            if (poCard) { // Check if a card was clicked
                 if (!config.profileComplete) {
                     modal.show(); // Show modal if profile is not complete
                 } else {
-                    window.location.href = bookingUrl; // Redirect if profile is complete
+                    // The URL is now part of the element's onclick attribute,
+                    // which was set in po_list.php.
+                    // The click event will trigger that `onclick` handler automatically.
+                    // No need for `window.location.href` here if `onclick` is present.
                 }
             }
         });
@@ -641,10 +434,32 @@ $date = $_GET['date'] ?? '';
         
         // Setup event handlers
         setupEventListeners();
-        handlePOSelection(); // Attach PO box click listener
+        setupPOSelectionListener(); // Attach PO card click listener to the parent container
         
         // Load initial data
         fetchPO();
+        
+        // Add event listeners for buttons that replaced inline handlers
+        const searchBtn = document.querySelector('.search-bus-btn');
+        if (searchBtn) {
+            searchBtn.addEventListener('click', fetchPO);
+        }
+        
+        const modalCloseBtn = document.querySelector('.modal-close-btn');
+        if (modalCloseBtn) {
+            modalCloseBtn.addEventListener('click', () => modal.close());
+        }
+        
+        // Add click handlers for po-cards (replacing inline onclick)
+        document.addEventListener('click', (e) => {
+            const poCard = e.target.closest('.po-card[data-booking-url]');
+            if (poCard) {
+                const url = poCard.getAttribute('data-booking-url');
+                if (url) {
+                    window.location.href = url;
+                }
+            }
+        });
     }
 
     // Start application when DOM is ready

@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once '../config/database.php';
+require_once '../config/Config.php';
 require_once '../model/User.php';
 
 // Basic authentication check
@@ -43,7 +44,7 @@ function sanitizeInput($input) {
 
 $action = sanitizeInput($_POST['action'] ?? '');
 
-require_once '../config/Config.php';
+require_once '../config/database.php';
 
 // Helper functions for validation
 function validateProfileInput($nama, $no_hp, $jk) {

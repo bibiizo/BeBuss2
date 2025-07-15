@@ -75,94 +75,65 @@ $stmt = $pdo->prepare("SELECT pemesanan.*, bus.tanggal_berangkat, po.nama_po, ru
                        ORDER BY pemesanan.tanggal_pesan DESC");
 $stmt->execute([$user_id]);
 $data = $stmt->fetchAll();
+
+// Include navbar
+include '../components/navbar.php';
 ?>
 
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Riwayat Pemesanan - BeBuss</title>
-    <link rel="stylesheet" href="../../assets/css/style.css">
-    <style>
-        tr.clickable-row:hover {
-            background-color: #f0f0f0;
-            cursor: pointer;
-        }
-        /* Tambahan styling untuk pesan sukses dan error */
-        .success-message-alert {
-            color: #28a745;
-            font-size: 0.9em;
-            margin-top: 5px;
-            margin-bottom: 10px;
-            text-align: center;
-            background-color: #e6ffe6;
-            border: 1px solid #28a745;
-            padding: 10px;
-            border-radius: 5px;
-        }
-        .error-message-alert {
-            color: #dc3545;
-            font-size: 0.9em;
-            margin-top: 5px;
-            margin-bottom: 10px;
-            text-align: center;
-            background-color: #ffe6e6;
-            border: 1px solid #dc3545;
-            padding: 10px;
-            border-radius: 5px;
-        }
-    </style>
+    <link rel="icon" type="image/x-icon" href="../../assets/images/logo/favicon.ico">
+    <link rel="stylesheet" href="../../assets/css/modern.css">
 </head>
 <body>
-    <?php include '../components/navbar.php'; // Sertakan navbar ?>
-<div class="container">
-    <h2>Riwayat Pemesanan Anda</h2>
+    <main class="container history-container">
+        <div class="page-header">
+            <h1>Riwayat Pemesanan Anda</h1>
+        </div>
 
-    <?php if (!empty($success_message)): ?>
-        <?php
-        // Periksa apakah pesan berasal dari proses pemesanan baru
-        if (strpos($success_message, 'Pemesanan tiket berhasil') !== false) {
-            $success_message = "Pemesanan tiket berhasil. Silakan selesaikan pembayaran dalam 10 menit.";
-        }
-        ?>
-        <p class="success-message-alert"><?= htmlspecialchars($success_message) ?></p>
-    <?php endif; ?>
-    <?php if (!empty($error_message)): ?>
-        <p class="error-message-alert"><?= htmlspecialchars($error_message) ?></p>
-    <?php endif; ?>
+        <?php if ($success_message): ?>
+            <div class="alert alert-success"><?= htmlspecialchars($success_message) ?></div>
+        <?php endif; ?>
+        <?php if ($error_message): ?>
+            <div class="alert alert-danger"><?= htmlspecialchars($error_message) ?></div>
+        <?php endif; ?>
 
-    <?php if (empty($data)): ?>
-        <p>Belum ada tiket yang dipesan.</p>
-    <?php else: ?>
-        <table border="1" cellpadding="10" cellspacing="0">
-            <tr>
-                <th>PO</th>
-                <th>Rute</th>
-                <th>Tanggal Berangkat</th>
-                <th>Titik Naik</th>
-                <th>Total Harga</th>
-                <th>Status</th>
-            </tr>
+        <?php if (empty($data)): ?>
+            <div class="alert alert-info">Anda belum memiliki riwayat pemesanan.</div>
+        <?php else: ?>
             <?php foreach ($data as $row): ?>
-                <?php
-                // Ambil kursi untuk pemesanan ini
-                $stmt_k = $pdo->prepare("SELECT nomor_kursi FROM detail_kursi_pesan 
-                                        JOIN kursi ON detail_kursi_pesan.kursi_id = kursi.id 
-                                        WHERE pemesanan_id = ?");
-                $stmt_k->execute([$row['id']]);
-                $kursi_list = $stmt_k->fetchAll(PDO::FETCH_COLUMN);
-                $kursi_str = implode(', ', $kursi_list);
-                ?>
-                <tr class="clickable-row" onclick="window.location='history_detail.php?pemesanan_id=<?= $row['id'] ?>'">
-                    <td><?= $row['nama_po'] ?></td>
-                    <td><?= $row['kota_asal'] ?> &rarr; <?= $row['kota_tujuan'] ?></td>
-                    <td><?= date('d-m-Y', strtotime($row['tanggal_berangkat'])) ?></td>
-                    <td><?= $row['lokasi_naik'] ?><br><small>Kursi: <?= $kursi_str ?></small></td>
-                    <td>Rp <?= number_format($row['total_harga'], 0, ',', '.') ?></td>
-                    <td><?= ucfirst($row['status']) ?></td>
-                </tr>
+                <a href="history_detail.php?pemesanan_id=<?= $row['id'] ?>" class="booking-card">
+                    <div class="booking-card-content">
+                        <div class="booking-info po">
+                            <span class="label">Operator Bus</span>
+                            <span class="value po-name"><?= htmlspecialchars($row['nama_po']) ?></span>
+                        </div>
+                        <div class="booking-info">
+                            <span class="label">Rute</span>
+                            <span class="value"><?= htmlspecialchars($row['kota_asal']) ?> → <?= htmlspecialchars($row['kota_tujuan']) ?></span>
+                        </div>
+                        <div class="booking-info">
+                            <span class="label">Tanggal Berangkat</span>
+                            <span class="value"><?= date('d M Y', strtotime($row['tanggal_berangkat'])) ?></span>
+                        </div>
+                        <div class="booking-info">
+                            <span class="label">Total Bayar</span>
+                            <span class="value">Rp <?= number_format($row['total_harga'], 0, ',', '.') ?></span>
+                        </div>
+                        
+                        <?php
+                        $status = strtolower($row['status']);
+                        $status_class = 'status-' . $status;
+                        ?>
+                        <span class="status-badge <?= $status_class ?>"><?= htmlspecialchars(ucfirst($status)) ?></span>
+                    </div>
+                </a>
             <?php endforeach; ?>
-        </table>
-    <?php endif; ?>
-</div>
+        <?php endif; ?>
+    </main>
 </body>
 </html>

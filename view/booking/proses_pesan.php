@@ -81,72 +81,70 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $pdo->beginTransaction();
 
     try {
-        // Simpan ke tabel pemesanan
-        // tanggal_pesan akan otomatis terisi oleh DEFAULT CURRENT_TIMESTAMP di DB
-        $stmt_pemesanan = $pdo->prepare("INSERT INTO pemesanan (user_id, bus_id, lokasi_naik, total_harga, status) VALUES (?, ?, ?, ?, 'aktif')");
-        $stmt_pemesanan->execute([$user_id, $bus_id, $lokasi_naik, $total_harga_final]);
+        // Langkah 1: Verifikasi ketersediaan semua kursi yang dipilih SEBELUM membuat pesanan
+        // Ini mencegah pembuatan pesanan jika salah satu kursi sudah tidak tersedia.
+        $placeholders = implode(',', array_fill(0, count($kursi_terpilih), '?'));
+        $stmt_check_kursi = $pdo->prepare("SELECT id, status FROM kursi WHERE id IN ($placeholders) AND bus_id = ? FOR UPDATE");
+        
+        $params = $kursi_terpilih;
+        $params[] = $bus_id;
+        $stmt_check_kursi->execute($params);
+        
+        $kursi_ditemukan = $stmt_check_kursi->fetchAll(PDO::FETCH_ASSOC);
 
-        $pemesanan_id = $pdo->lastInsertId();
+        if (count($kursi_ditemukan) !== count($kursi_terpilih)) {
+            throw new Exception("Beberapa kursi yang dipilih tidak valid atau tidak ditemukan untuk bus ini.");
+        }
 
-        $kursi_to_update_ids = []; // Untuk menyimpan ID kursi yang akan diupdate statusnya
-        $kursi_terpilih_valid = []; // Untuk menyimpan nomor kursi yang valid saja
-
-        // Verifikasi dan Simpan detail kursi
-        foreach ($kursi_terpilih as $nomor) {
-            // Ambil kursi_id dan status
-            $stmt_kursi = $pdo->prepare("SELECT id, status FROM kursi WHERE bus_id = ? AND nomor_kursi = ?");
-            $stmt_kursi->execute([$bus_id, $nomor]);
-            $kursi_data = $stmt_kursi->fetch(PDO::FETCH_ASSOC);
-
-            if ($kursi_data && $kursi_data['status'] === 'kosong') {
-                $kursi_id = $kursi_data['id'];
-                // Masukkan ke detail_kursi_pesan
-                $stmt_insert_detail = $pdo->prepare("INSERT INTO detail_kursi_pesan (pemesanan_id, kursi_id) VALUES (?, ?)");
-                $stmt_insert_detail->execute([$pemesanan_id, $kursi_id]);
-
-                $kursi_to_update_ids[] = $kursi_id; // Tambahkan ke daftar update
-                $kursi_terpilih_valid[] = $nomor; // Tambahkan ke daftar kursi yang benar-benar dipilih
-            } else {
-                // Kursi sudah tidak kosong (terisi atau tidak valid)
-                $pdo->rollBack();
-                $_SESSION['booking_errors'] = ["Kursi $nomor sudah tidak tersedia atau tidak valid. Silakan pilih ulang."];
-                $_SESSION['old_booking_input'] = [
-                    'lokasi_naik' => $lokasi_naik,
-                    'kursi' => '[]' // Kosongkan pilihan kursi lama
-                ];
-                header('Location: ' . $redirect_url);
-                exit; // Hentikan eksekusi
+        foreach ($kursi_ditemukan as $k) {
+            if ($k['status'] !== 'kosong') {
+                throw new Exception("Kursi dengan ID {$k['id']} sudah terisi. Silakan pilih kursi lain.");
             }
         }
 
-        // Update status kursi menjadi 'terisi' secara massal jika memungkinkan, atau per satu
-        if (!empty($kursi_to_update_ids)) {
-            $placeholders = implode(',', array_fill(0, count($kursi_to_update_ids), '?'));
-            $stmt_update_kursi = $pdo->prepare("UPDATE kursi SET status = 'terisi' WHERE id IN ($placeholders)");
-            $stmt_update_kursi->execute($kursi_to_update_ids);
+        // Langkah 2: Simpan ke tabel pemesanan
+        $stmt_pemesanan = $pdo->prepare(
+            "INSERT INTO pemesanan (user_id, bus_id, lokasi_naik, total_harga, status) VALUES (?, ?, ?, ?, 'aktif')"
+        );
+        $stmt_pemesanan->execute([$user_id, $bus_id, $lokasi_naik, $total_harga_final]);
+        $pemesanan_id = $pdo->lastInsertId();
+
+        // Langkah 3: Simpan detail setiap kursi yang dipesan
+        $stmt_detail_kursi = $pdo->prepare("INSERT INTO detail_kursi_pesan (pemesanan_id, kursi_id) VALUES (?, ?)");
+        foreach ($kursi_terpilih as $kursi_id) {
+            $stmt_detail_kursi->execute([$pemesanan_id, $kursi_id]);
         }
 
-        $pdo->commit(); // Commit transaksi jika semua berhasil
+        // Langkah 4: Update status semua kursi yang dipilih menjadi 'terisi'
+        $stmt_update_kursi = $pdo->prepare("UPDATE kursi SET status = 'terisi' WHERE id IN ($placeholders)");
+        $stmt_update_kursi->execute($kursi_terpilih);
 
-        // Redirect ke halaman riwayat dengan pesan sukses
-        $_SESSION['success_message'] = "Pemesanan tiket berhasil. Silakan selesaikan pembayaran dalam 1 jam.";
-        header("Location: ../history/history_index.php");
+        // Jika semua berhasil, commit transaksi
+        $pdo->commit();
+
+        // Redirect ke halaman detail riwayat dengan pesan sukses
+        $_SESSION['success_message'] = "Pemesanan Anda berhasil dibuat! Segera selesaikan pembayaran.";
+        header('Location: ../history/history_detail.php?pemesanan_id=' . $pemesanan_id);
         exit;
 
-    } catch (PDOException $e) {
-        $pdo->rollBack(); // Rollback jika ada error
-        error_log("Error in proses_pesan.php transaction: " . $e->getMessage()); // Log error
-        $_SESSION['booking_errors'] = ["Terjadi kesalahan saat memproses pemesanan. Mohon coba lagi."];
+    } catch (Exception $e) {
+        // Jika ada error, rollback semua perubahan
+        $pdo->rollBack();
+        
+        // Simpan pesan error dan data input lama ke session
+        $_SESSION['booking_errors'] = [$e->getMessage()];
         $_SESSION['old_booking_input'] = [
             'lokasi_naik' => $lokasi_naik,
             'kursi' => $kursi_terpilih_json
         ];
+        
+        // Redirect kembali ke halaman booking
         header('Location: ' . $redirect_url);
         exit;
     }
 } else {
-    // Jika akses langsung ke controller tanpa metode POST
-    header('Location: ../home/index_home.php'); // Arahkan ke halaman utama/pencarian
+    // Jika bukan metode POST, redirect ke halaman utama
+    header('Location: ../home/index_home.php');
     exit;
 }
 ?>
