@@ -1,6 +1,21 @@
-# BeBuss - Bus Ticketing System 🚌
+# BeBuss2 - Clean Bus Ticketing System 🚌
 
-Sistem pemesanan tiket bus online yang dibuat dengan PHP dan MySQL.
+**Production-ready bus ticketing system built with PHP and MySQL**  
+*Clean, optimized, and W3C compliant version*
+
+## ✨ Latest Updates (v2.0)
+
+### 🎯 Major Cleanup & Optimization
+- **File Reduction**: 178 → 35 files (80% reduction!)
+- **Performance**: Optimized loading and structure
+- **Clean Code**: Removed all test, debug, and duplicate files
+- **W3C Compliant**: HTML5 validation improvements
+
+### 🔧 Bug Fixes & Improvements  
+- **Config System**: Restored validation constants and error messages
+- **Authentication Gate**: Simple index.php redirect system
+- **Logo Integration**: Professional branding with favicon support
+- **Security**: Enhanced input validation and error handling
 
 ## 🚀 Fitur Utama
 
