@@ -17,16 +17,10 @@ $profile_errors = $_SESSION['profile_errors'] ?? [];
 $old_profile_input = $_SESSION['old_profile_input'] ?? [];
 $profile_success_message = $_SESSION['profile_success_message'] ?? ''; // Untuk pesan sukses profil
 
-// Ambil error dan old_input dari session untuk update password
-$password_errors = $_SESSION['password_errors'] ?? [];
-$password_success_message = $_SESSION['password_success_message'] ?? ''; // Untuk pesan sukses password
-
 // Hapus semua pesan dari session setelah diambil
 unset($_SESSION['profile_errors']);
 unset($_SESSION['old_profile_input']);
 unset($_SESSION['profile_success_message']);
-unset($_SESSION['password_errors']);
-unset($_SESSION['password_success_message']);
 
 
 // Gunakan data dari $old_profile_input jika ada error, jika tidak, gunakan data dari database
@@ -42,6 +36,8 @@ $display_jenis_kelamin = $old_profile_input['jenis_kelamin'] ?? ($user['jenis_ke
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Profil Pengguna - BeBuss</title>
+    <link rel="icon" type="image/x-icon" href="../../assets/images/logo/favicon.ico">
+    <link rel="shortcut icon" type="image/x-icon" href="../../assets/images/logo/favicon.ico">
     <link rel="stylesheet" href="../../assets/css/modern.css">
 </head>
 <body>
@@ -96,44 +92,9 @@ $display_jenis_kelamin = $old_profile_input['jenis_kelamin'] ?? ($user['jenis_ke
                     </select>
                 </div>
 
-                <button type="submit" class="btn btn-primary">Simpan</button>
-            </form>
-        </div>
-
-        <!-- Update Password Card -->
-        <div class="profile-card">
-            <div class="profile-card-header">
-                <h3>Perbarui Kata Sandi</h3>
-                <p>Pastikan akun Anda menggunakan kata sandi yang panjang dan acak agar tetap aman.</p>
-            </div>
-
-            <?php if (!empty($password_success_message)): ?>
-                <div class="alert alert-success"><?= htmlspecialchars($password_success_message) ?></div>
-            <?php endif; ?>
-            <?php if (!empty($password_errors)): ?>
-                <div class="alert alert-danger">
-                    <ul>
-                        <?php foreach ($password_errors as $error): ?>
-                            <li><?= htmlspecialchars($error) ?></li>
-                        <?php endforeach; ?>
-                    </ul>
+                <div class="form-button-group">
+                    <button type="submit" class="btn btn-primary">Simpan</button>
                 </div>
-            <?php endif; ?>
-
-            <form method="POST" action="../../controller/ProfileController.php">
-                <input type="hidden" name="action" value="update_password">
-                
-                <div class="form-group">
-                    <label for="new_password" class="form-label">Kata Sandi Baru</label>
-                    <input type="password" name="new_password" id="new_password" class="form-control" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="confirm_password" class="form-label">Konfirmasi Kata Sandi</label>
-                    <input type="password" name="confirm_password" id="confirm_password" class="form-control" required>
-                </div>
-
-                <button type="submit" class="btn btn-primary">Simpan</button>
             </form>
         </div>
     </main>

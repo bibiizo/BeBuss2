@@ -66,12 +66,16 @@ function handleExpiredOrders($pdo) {
 handleExpiredOrders($pdo);
 
 // Get user bookings
-$stmt = $pdo->prepare("SELECT pemesanan.*, bus.tanggal_berangkat, po.nama_po, rute.kota_asal, rute.kota_tujuan
+$stmt = $pdo->prepare("SELECT pemesanan.*, bus.tanggal_berangkat, bus.kode_perjalanan, bus.plat_nomor, po.nama_po, rute.kota_asal, rute.kota_tujuan,
+                              GROUP_CONCAT(kursi.nomor_kursi ORDER BY kursi.nomor_kursi ASC SEPARATOR ', ') as nomor_kursi
                        FROM pemesanan
                        JOIN bus ON pemesanan.bus_id = bus.id
                        JOIN po ON bus.po_id = po.id
                        JOIN rute ON bus.rute_id = rute.id
+                       LEFT JOIN detail_kursi_pesan ON pemesanan.id = detail_kursi_pesan.pemesanan_id
+                       LEFT JOIN kursi ON detail_kursi_pesan.kursi_id = kursi.id
                        WHERE pemesanan.user_id = ?
+                       GROUP BY pemesanan.id
                        ORDER BY pemesanan.tanggal_pesan DESC");
 $stmt->execute([$user_id]);
 $data = $stmt->fetchAll();
@@ -87,6 +91,7 @@ include '../components/navbar.php';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Riwayat Pemesanan - BeBuss</title>
     <link rel="icon" type="image/x-icon" href="../../assets/images/logo/favicon.ico">
+    <link rel="shortcut icon" type="image/x-icon" href="../../assets/images/logo/favicon.ico">
     <link rel="stylesheet" href="../../assets/css/modern.css">
 </head>
 <body>
@@ -113,6 +118,10 @@ include '../components/navbar.php';
                             <span class="value po-name"><?= htmlspecialchars($row['nama_po']) ?></span>
                         </div>
                         <div class="booking-info">
+                            <span class="label">Plat Nomor</span>
+                            <span class="value"><?= htmlspecialchars($row['plat_nomor'] ?? 'N/A') ?></span>
+                        </div>
+                        <div class="booking-info">
                             <span class="label">Rute</span>
                             <span class="value"><?= htmlspecialchars($row['kota_asal']) ?> → <?= htmlspecialchars($row['kota_tujuan']) ?></span>
                         </div>
@@ -121,8 +130,8 @@ include '../components/navbar.php';
                             <span class="value"><?= date('d M Y', strtotime($row['tanggal_berangkat'])) ?></span>
                         </div>
                         <div class="booking-info">
-                            <span class="label">Total Bayar</span>
-                            <span class="value">Rp <?= number_format($row['total_harga'], 0, ',', '.') ?></span>
+                            <span class="label">Nomor Kursi</span>
+                            <span class="value"><?= htmlspecialchars($row['nomor_kursi'] ?? 'N/A') ?></span>
                         </div>
                         
                         <?php

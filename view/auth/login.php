@@ -16,6 +16,7 @@ unset($_SESSION['success_message']);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - BeBuss</title>
     <link rel="icon" type="image/x-icon" href="../../assets/images/logo/favicon.ico">
+    <link rel="shortcut icon" type="image/x-icon" href="../../assets/images/logo/favicon.ico">
     <link rel="stylesheet" href="../../assets/css/modern.css">
 </head>
 <body>
@@ -23,7 +24,6 @@ unset($_SESSION['success_message']);
         <div class="card auth-card">
             <div class="auth-header">
                 <a href="../../index.php" class="brand">
-                    <img src="../../assets/images/logo/logo.png" alt="BeBuss Logo" class="auth-logo">
                     <span class="brand-text">BeBuss</span>
                 </a>
                 <h1>Selamat Datang Kembali</h1>

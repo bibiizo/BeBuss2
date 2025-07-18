@@ -64,6 +64,8 @@ $old_selected_kursi = json_decode($old_input['kursi'], true) ?? [];
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pilih Kursi - <?= htmlspecialchars($bus['nama_po']) ?> - BeBuss</title>
+    <link rel="icon" type="image/x-icon" href="../../assets/images/logo/favicon.ico">
+    <link rel="shortcut icon" type="image/x-icon" href="../../assets/images/logo/favicon.ico">
     <link rel="stylesheet" href="../../assets/css/modern.css">
 </head>
 <body>
@@ -130,6 +132,14 @@ $old_selected_kursi = json_decode($old_input['kursi'], true) ?? [];
                     <div class="summary-item">
                         <span class="label">Operator Bus</span>
                         <span class="value"><?= htmlspecialchars($bus['nama_po']) ?></span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="label">Kode Perjalanan</span>
+                        <span class="value"><?= htmlspecialchars($bus['kode_perjalanan'] ?? 'N/A') ?></span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="label">Plat Nomor</span>
+                        <span class="value"><?= htmlspecialchars($bus['plat_nomor'] ?? 'N/A') ?></span>
                     </div>
                     <div class="summary-item">
                         <span class="label">Rute</span>

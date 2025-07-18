@@ -62,16 +62,24 @@ $home_link = $base_url . '/view/home/index_home.php';
 <nav class="navbar">
     <div class="navbar-container">
         <a href="<?= $home_link ?>" class="navbar-brand">
-            <img src="<?= $base_url ?>/assets/images/logo/logo.png" alt="BeBuss Logo" class="navbar-logo">
             <span class="brand-text">BeBuss</span>
         </a>
 
-        <div class="navbar-links">
+        <!-- Hamburger Menu Button (Mobile Only) -->
+        <button class="navbar-toggle" id="navbarToggle" type="button">
+            <span class="hamburger-line"></span>
+            <span class="hamburger-line"></span>
+            <span class="hamburger-line"></span>
+        </button>
+
+        <!-- Desktop Navigation -->
+        <div class="navbar-links desktop-nav">
             <a href="<?= $home_link ?>" class="nav-link <?= ($current_page_basename == 'index_home.php') ? 'active' : '' ?>">Home</a>
             <a href="<?= $history_link ?>" class="nav-link <?= ($current_page_basename == 'history_index.php') ? 'active' : '' ?>">Riwayat</a>
         </div>
 
-        <div class="profile-dropdown" id="profileDropdown">
+        <!-- Desktop Profile Dropdown -->
+        <div class="profile-dropdown desktop-nav" id="profileDropdown">
             <button class="profile-toggle" type="button">
                 <div class="profile-avatar">
                     <?= $user_data['initial'] ?>
@@ -91,11 +99,44 @@ $home_link = $base_url . '/view/home/index_home.php';
                 <a href="<?= $base_url ?>/logout.php" class="dropdown-item">Logout</a>
             </div>
         </div>
+
+        <!-- Mobile Menu -->
+        <div class="mobile-menu" id="mobileMenu">
+            <div class="mobile-menu-header">
+                <div class="mobile-profile">
+                    <div class="profile-avatar">
+                        <?= $user_data['initial'] ?>
+                    </div>
+                    <div class="profile-info">
+                        <strong><?= $user_data['name'] ?></strong>
+                        <div class="email"><?= $user_data['email'] ?></div>
+                    </div>
+                </div>
+            </div>
+            <div class="mobile-menu-content">
+                <a href="<?= $home_link ?>" class="mobile-nav-link <?= ($current_page_basename == 'index_home.php') ? 'active' : '' ?>">
+                    Home
+                </a>
+                <a href="<?= $history_link ?>" class="mobile-nav-link <?= ($current_page_basename == 'history_index.php') ? 'active' : '' ?>">
+                    Riwayat
+                </a>
+                <a href="<?= $user_profile_link ?>" class="mobile-nav-link">
+                    Profil Saya
+                </a>
+                <a href="<?= $base_url ?>/logout.php" class="mobile-nav-link logout">
+                    Logout
+                </a>
+            </div>
+        </div>
+
+        <!-- Mobile Menu Overlay -->
+        <div class="mobile-menu-overlay" id="mobileMenuOverlay"></div>
     </div>
 </nav>
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    // Profile dropdown functionality
     const profileDropdown = document.getElementById('profileDropdown');
     if (profileDropdown) {
         const toggle = profileDropdown.querySelector('.profile-toggle');
@@ -103,12 +144,55 @@ document.addEventListener('DOMContentLoaded', function () {
 
         toggle.addEventListener('click', function (e) {
             e.stopPropagation();
-            profileDropdown.classList.toggle('open');
+            profileDropdown.classList.toggle('active');
         });
 
         document.addEventListener('click', function (e) {
             if (!profileDropdown.contains(e.target)) {
-                profileDropdown.classList.remove('open');
+                profileDropdown.classList.remove('active');
+            }
+        });
+    }
+
+    // Hamburger menu functionality
+    const navbarToggle = document.getElementById('navbarToggle');
+    const mobileMenu = document.getElementById('mobileMenu');
+    const mobileMenuOverlay = document.getElementById('mobileMenuOverlay');
+    
+    if (navbarToggle && mobileMenu && mobileMenuOverlay) {
+        function toggleMobileMenu() {
+            navbarToggle.classList.toggle('active');
+            mobileMenu.classList.toggle('active');
+            mobileMenuOverlay.classList.toggle('active');
+            
+            // Prevent body scroll when menu is open
+            if (mobileMenu.classList.contains('active')) {
+                document.body.style.overflow = 'hidden';
+            } else {
+                document.body.style.overflow = '';
+            }
+        }
+        
+        navbarToggle.addEventListener('click', toggleMobileMenu);
+        mobileMenuOverlay.addEventListener('click', toggleMobileMenu);
+        
+        // Close mobile menu when clicking on nav links
+        const mobileNavLinks = document.querySelectorAll('.mobile-nav-link');
+        mobileNavLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                if (!link.classList.contains('logout')) {
+                    toggleMobileMenu();
+                }
+            });
+        });
+        
+        // Close mobile menu on window resize
+        window.addEventListener('resize', function() {
+            if (window.innerWidth > 768) {
+                navbarToggle.classList.remove('active');
+                mobileMenu.classList.remove('active');
+                mobileMenuOverlay.classList.remove('active');
+                document.body.style.overflow = '';
             }
         });
     }

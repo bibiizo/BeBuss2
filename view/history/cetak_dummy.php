@@ -2,159 +2,226 @@
 session_start();
 require_once '../../config/database.php';
 
-// Pastikan user sudah login
+// Penting: Pastikan timezone disetel dengan benar
+date_default_timezone_set('Asia/Jakarta');
+
 if (!isset($_SESSION['user_id'])) {
-    header('Location: ../auth/login.php');
-    exit;
+    die("Anda belum login.");
 }
 
-$pemesanan_id = null;
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['pemesanan_id'])) {
-    $pemesanan_id = $_POST['pemesanan_id'];
-} else {
-    // Handle jika diakses langsung tanpa POST
-    // Bisa redirect atau tampilkan pesan error
-    die("Akses tidak sah. Silakan cetak tiket dari halaman detail riwayat.");
+if (!isset($_POST['pemesanan_id'])) {
+    die("ID pemesanan tidak ditemukan.");
 }
 
+$pemesanan_id = $_POST['pemesanan_id'];
 $user_id = $_SESSION['user_id'];
 
-// Ambil data pemesanan, pastikan statusnya 'selesai'
-$stmt = $pdo->prepare("SELECT pemesanan.*, bus.tanggal_berangkat, bus.jam_berangkat, bus.harga,
-                       po.nama_po, rute.kota_asal, rute.kota_tujuan, users.nama_lengkap, users.email, users.no_hp,
+// Ambil data pemesanan lengkap untuk tiket
+$stmt = $pdo->prepare("SELECT pemesanan.*, bus.tanggal_berangkat, bus.jam_berangkat, bus.kode_perjalanan, bus.plat_nomor, po.nama_po, rute.kota_asal, rute.kota_tujuan,
+                       bus.harga, users.nama_lengkap as nama_penumpang, users.email, users.no_hp,
                        COUNT(detail_kursi_pesan.kursi_id) as jumlah_penumpang
-                       FROM pemesanan
-                       JOIN bus ON pemesanan.bus_id = bus.id
-                       JOIN po ON bus.po_id = po.id
-                       JOIN rute ON bus.rute_id = rute.id
+                       FROM pemesanan 
+                       JOIN bus ON pemesanan.bus_id = bus.id 
+                       JOIN po ON bus.po_id = po.id 
+                       JOIN rute ON bus.rute_id = rute.id 
                        JOIN users ON pemesanan.user_id = users.id
                        LEFT JOIN detail_kursi_pesan ON pemesanan.id = detail_kursi_pesan.pemesanan_id
-                       WHERE pemesanan.id = ? AND pemesanan.user_id = ? AND pemesanan.status = 'selesai'
+                       WHERE pemesanan.id = ? AND pemesanan.user_id = ?
                        GROUP BY pemesanan.id");
 $stmt->execute([$pemesanan_id, $user_id]);
 $data = $stmt->fetch();
 
 if (!$data) {
-    die("Tiket tidak ditemukan, belum selesai pembayarannya, atau bukan milik Anda.");
+    die("Pemesanan tidak ditemukan atau bukan milik Anda.");
 }
 
-// Ambil kursi yang dipesan
+// Ambil daftar kursi
 $stmt_k = $pdo->prepare("SELECT nomor_kursi FROM detail_kursi_pesan 
                          JOIN kursi ON detail_kursi_pesan.kursi_id = kursi.id 
-                         WHERE pemesanan_id = ?");
+                         WHERE pemesanan_id = ?
+                         ORDER BY nomor_kursi");
 $stmt_k->execute([$pemesanan_id]);
-$kursi = $stmt_k->fetchAll(PDO::FETCH_COLUMN);
-$kursi_str = implode(', ', $kursi);
+$kursi_list = $stmt_k->fetchAll(PDO::FETCH_COLUMN);
 ?>
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E-Tiket BeBuss - BP-<?= str_pad($pemesanan_id, 6, '0', STR_PAD_LEFT) ?></title>
+    <title>E-Tiket BeBuss - BB<?= str_pad($data['id'], 6, '0', STR_PAD_LEFT) ?></title>
+    <link rel="icon" type="image/x-icon" href="../../assets/images/logo/favicon.ico">
+    <link rel="shortcut icon" type="image/x-icon" href="../../assets/images/logo/favicon.ico">
     <link rel="stylesheet" href="../../assets/css/modern.css">
+    <style>
+        @media print {
+            body { margin: 0; padding: 20px; }
+            .no-print { display: none !important; }
+            .ticket { box-shadow: none; border: 2px solid #000; }
+        }
+        .ticket {
+            max-width: 800px;
+            margin: 20px auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .ticket-header {
+            background: linear-gradient(135deg, #2563eb, #1e40af);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .ticket-body {
+            padding: 30px;
+        }
+        .ticket-section {
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px dashed #ddd;
+        }
+        .ticket-section:last-child {
+            border-bottom: none;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .qr-placeholder {
+            width: 120px;
+            height: 120px;
+            background: #f0f0f0;
+            border: 2px dashed #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 20px auto;
+            border-radius: 8px;
+        }
+    </style>
 </head>
 <body>
     <?php include '../components/navbar.php'; ?>
 
-    <div class="print-controls container">
-        <button type="button" class="btn btn-primary print-ticket-btn">Cetak Tiket</button>
-        <a href="history_detail.php?pemesanan_id=<?= $pemesanan_id ?>" class="btn btn-secondary">Kembali</a>
-    </div>
+    <div class="container">
+        <div class="ticket">
+            <!-- Header Tiket -->
+            <div class="ticket-header">
+                <h1>E-TIKET BEBUSS</h1>
+                <p>Kode Pemesanan: <strong>BB<?= str_pad($data['id'], 6, '0', STR_PAD_LEFT) ?></strong></p>
+            </div>
 
-    <div class="ticket-card">
-        <div class="ticket-header">
-            <div class="ticket-brand">BeBuss</div>
-            <div class="ticket-title">
-                <h2>E-TICKET BUS</h2>
-                <p>Kode Booking: <strong>BP-<?= str_pad($pemesanan_id, 6, '0', STR_PAD_LEFT) ?></strong></p>
+            <!-- Body Tiket -->
+            <div class="ticket-body">
+                <!-- Informasi Perjalanan -->
+                <div class="ticket-section">
+                    <h3>Informasi Perjalanan</h3>
+                    <div class="info-row">
+                        <span><strong>Rute:</strong></span>
+                        <span><?= htmlspecialchars($data['kota_asal']) ?> → <?= htmlspecialchars($data['kota_tujuan']) ?></span>
+                    </div>
+                    <div class="info-row">
+                        <span><strong>PO Bus:</strong></span>
+                        <span><?= htmlspecialchars($data['nama_po']) ?></span>
+                    </div>
+                    <div class="info-row">
+                        <span><strong>Kode Perjalanan:</strong></span>
+                        <span><?= htmlspecialchars($data['kode_perjalanan'] ?? 'N/A') ?></span>
+                    </div>
+                    <div class="info-row">
+                        <span><strong>Plat Nomor Bus:</strong></span>
+                        <span><?= htmlspecialchars($data['plat_nomor'] ?? 'N/A') ?></span>
+                    </div>
+                    <div class="info-row">
+                        <span><strong>Tanggal Berangkat:</strong></span>
+                        <span><?= date('d F Y', strtotime($data['tanggal_berangkat'])) ?></span>
+                    </div>
+                    <div class="info-row">
+                        <span><strong>Jam Berangkat:</strong></span>
+                        <span><?= date('H:i', strtotime($data['jam_berangkat'])) ?> WIB</span>
+                    </div>
+                </div>
+
+                <!-- Informasi Penumpang -->
+                <div class="ticket-section">
+                    <h3>Informasi Penumpang</h3>
+                    <div class="info-row">
+                        <span><strong>Nama:</strong></span>
+                        <span><?= htmlspecialchars($data['nama_penumpang']) ?></span>
+                    </div>
+                    <div class="info-row">
+                        <span><strong>Email:</strong></span>
+                        <span><?= htmlspecialchars($data['email']) ?></span>
+                    </div>
+                    <div class="info-row">
+                        <span><strong>No. HP:</strong></span>
+                        <span><?= htmlspecialchars($data['no_hp']) ?></span>
+                    </div>
+                    <div class="info-row">
+                        <span><strong>Jumlah Penumpang:</strong></span>
+                        <span><?= $data['jumlah_penumpang'] ?> orang</span>
+                    </div>
+                    <div class="info-row">
+                        <span><strong>Nomor Kursi:</strong></span>
+                        <span><?= implode(', ', $kursi_list) ?></span>
+                    </div>
+                </div>
+
+                <!-- Informasi Pembayaran -->
+                <div class="ticket-section">
+                    <h3>Informasi Pembayaran</h3>
+                    <div class="info-row">
+                        <span><strong>Total Harga:</strong></span>
+                        <span>Rp <?= number_format($data['total_harga'], 0, ',', '.') ?></span>
+                    </div>
+                    <div class="info-row">
+                        <span><strong>Status:</strong></span>
+                        <span class="status-<?= $data['status'] ?>"><?= ucfirst($data['status']) ?></span>
+                    </div>
+                    <?php if ($data['status'] == 'selesai'): ?>
+                    <div class="info-row">
+                        <span><strong>Tanggal Bayar:</strong></span>
+                        <span><?= date('d F Y H:i') ?> WIB</span>
+                    </div>
+                    <?php endif; ?>
+                </div>
+
+                <!-- QR Code Placeholder -->
+                <div class="ticket-section">
+                    <h3>QR Code</h3>
+                    <div class="qr-placeholder">
+                        <span style="color: #999;">QR Code<br>Placeholder</span>
+                    </div>
+                    <p style="text-align: center; color: #666; font-size: 14px;">
+                        Tunjukkan QR Code ini kepada petugas saat naik bus
+                    </p>
+                </div>
+
+                <!-- Informasi Tambahan -->
+                <div class="ticket-section">
+                    <h3>ℹ️ Informasi Penting</h3>
+                    <ul style="color: #666; font-size: 14px;">
+                        <li>Harap tiba di terminal 30 menit sebelum keberangkatan</li>
+                        <li>Bawa identitas diri yang sah (KTP/SIM/Paspor)</li>
+                        <li>Tiket ini berlaku untuk 1x perjalanan sesuai jadwal</li>
+                        <li>Simpan tiket ini hingga tiba di tujuan</li>
+                        <li>Hubungi customer service untuk perubahan/pembatalan</li>
+                    </ul>
+                </div>
             </div>
         </div>
 
-        <div class="ticket-section">
-            <h3>Detail Penumpang</h3>
-            <div class="ticket-grid">
-                <div class="ticket-item">
-                    <span class="label">Nama</span>
-                    <span class="value"><?= htmlspecialchars($data['nama_lengkap']) ?></span>
-                </div>
-                <div class="ticket-item">
-                    <span class="label">Email</span>
-                    <span class="value"><?= htmlspecialchars($data['email']) ?></span>
-                </div>
-                <div class="ticket-item">
-                    <span class="label">No. Handphone</span>
-                    <span class="value"><?= htmlspecialchars($data['no_hp']) ?></span>
-                </div>
-            </div>
-        </div>
-
-        <div class="ticket-section">
-            <h3>Detail Perjalanan</h3>
-            <div class="ticket-grid">
-                <div class="ticket-item">
-                    <span class="label">Operator Bus</span>
-                    <span class="value"><?= htmlspecialchars($data['nama_po']) ?></span>
-                </div>
-                <div class="ticket-item">
-                    <span class="label">Rute</span>
-                    <span class="value"><?= htmlspecialchars($data['kota_asal']) ?> → <?= htmlspecialchars($data['kota_tujuan']) ?></span>
-                </div>
-                <div class="ticket-item">
-                    <span class="label">Tanggal Berangkat</span>
-                    <span class="value"><?= date('l, d F Y', strtotime($data['tanggal_berangkat'])) ?></span>
-                </div>
-                <div class="ticket-item">
-                    <span class="label">Jam Berangkat</span>
-                    <span class="value"><?= date('H:i', strtotime($data['jam_berangkat'])) ?> WIB</span>
-                </div>
-                <div class="ticket-item">
-                    <span class="label">Titik Naik</span>
-                    <span class="value"><?= htmlspecialchars($data['lokasi_naik']) ?></span>
-                </div>
-                <div class="ticket-item">
-                    <span class="label">Nomor Kursi</span>
-                    <span class="value"><?= htmlspecialchars($kursi_str) ?></span>
-                </div>
-            </div>
-        </div>
-
-        <div class="ticket-section">
-            <h3>Detail Pembayaran</h3>
-            <div class="ticket-grid">
-                <div class="ticket-item">
-                    <span class="label">Jumlah Penumpang</span>
-                    <span class="value"><?= htmlspecialchars($data['jumlah_penumpang']) ?> orang</span>
-                </div>
-                <div class="ticket-item">
-                    <span class="label">Total Pembayaran</span>
-                    <span class="value">Rp <?= number_format($data['total_harga'], 0, ',', '.') ?></span>
-                </div>
-                <div class="ticket-item">
-                    <span class="label">Status</span>
-                    <span class="value status-success">SELESAI</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="ticket-footer">
-            <p>Terima kasih telah menggunakan layanan BeBuss. Tunjukkan e-tiket ini kepada petugas saat akan berangkat.</p>
-            <p>&copy; <?= date('Y') ?> BeBuss. All rights reserved.</p>
+        <!-- Tombol Aksi -->
+        <div class="text-center no-print" style="margin: 20px 0;">
+            <button onclick="window.print()" class="btn btn-primary">🖨️ Cetak Tiket</button>
+            <a href="history_detail.php?pemesanan_id=<?= $pemesanan_id ?>" class="btn btn-secondary">← Kembali</a>
         </div>
     </div>
 
     <script>
-        // Replace inline onclick handler
-        document.addEventListener('DOMContentLoaded', function() {
-            const printBtn = document.querySelector('.print-ticket-btn');
-            if (printBtn) {
-                printBtn.addEventListener('click', function() {
-                    window.print();
-                });
-            }
-        });
+        // Auto print ketika halaman dimuat (opsional)
+        // window.onload = function() { window.print(); }
     </script>
-
 </body>
 </html>

@@ -13,7 +13,6 @@ $base_url = getBaseUrlGuest();
     <div class="container">
         <div class="navbar-brand">
             <a href="<?= $base_url ?>/index.php" class="navbar-brand-link">
-                <img src="<?= $base_url ?>/assets/images/logo/logo.png" alt="BeBuss Logo" class="navbar-logo">
                 <span class="brand-text">BeBuss</span>
             </a>
         </div>

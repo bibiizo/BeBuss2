@@ -10,6 +10,8 @@ if (!isset($_SESSION['user_id'])) {
 <html>
 <head>
     <title>Dashboard - BeBuss</title>
+    <link rel="icon" type="image/x-icon" href="../../assets/images/logo/favicon.ico">
+    <link rel="shortcut icon" type="image/x-icon" href="../../assets/images/logo/favicon.ico">
     <link rel="stylesheet" href="../../assets/css/style-simple.css">
 </head>
 <body>

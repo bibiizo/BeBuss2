@@ -1,5 +1,15 @@
 <?php
+session_start();
 require_once '../../config/database.php';
+require_once '../../model/User.php';
+
+// Cek kelengkapan profil user
+$profile_complete = false;
+if (isset($_SESSION['user_id'])) {
+    $userModel = new User($pdo);
+    $user = $userModel->findById($_SESSION['user_id']);
+    $profile_complete = !empty($user['nama_lengkap']) && !empty($user['no_hp']) && !empty($user['jenis_kelamin']);
+}
 
 // Sanitize and get parameters
 $filters = [
@@ -12,6 +22,8 @@ $filters = [
 // We need to join with 'kursi' table and group by bus to count available seats
 $sql = "SELECT 
             bus.id, 
+            bus.kode_perjalanan,
+            bus.plat_nomor,
             po.nama_po, 
             rute.kota_asal, 
             rute.kota_tujuan, 
@@ -71,11 +83,27 @@ if (!empty($results)) {
         $formattedDate = formatDate($row['tanggal_berangkat'], $months);
         $bookingUrl = "../booking/booking_detail.php?bus_id={$row['id']}";
 
+        // Tentukan class dan status card berdasarkan kelengkapan profil
+        $cardClass = $profile_complete ? 'po-card' : 'po-card po-card-disabled';
+        $cardAttributes = $profile_complete ? "data-booking-url='{$bookingUrl}'" : "data-disabled='true'";
+
         // The entire card is a clickable element
-        echo "<div class='po-card' data-booking-url='{$bookingUrl}'>";
+        echo "<div class='{$cardClass}' {$cardAttributes}>";
+        
+        // Jika profil belum lengkap, tampilkan overlay peringatan
+        if (!$profile_complete) {
+            echo "    <div class='profile-warning-overlay'>";
+            echo "        <div class='warning-content'>";
+            echo "            <div class='warning-icon'>⚠️</div>";
+            echo "            <div class='warning-text'>Lengkapi profil terlebih dahulu untuk memesan tiket</div>";
+            echo "            <a href='../auth/complete_profile.php' class='warning-btn'>Lengkapi Profil</a>";
+            echo "        </div>";
+            echo "    </div>";
+        }
         echo "    <div class='po-header'>";
         echo "        <div>";
         echo "            <div class='po-name'>{$row['nama_po']}</div>";
+        echo "            <div class='po-code'>{$row['kode_perjalanan']} • {$row['plat_nomor']}</div>";
         echo "        </div>";
         echo "        <div class='po-price'>";
         echo "            <div class='price-amount'>Rp " . number_format($row['harga'], 0, ',', '.') . "</div>";

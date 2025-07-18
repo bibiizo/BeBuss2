@@ -25,7 +25,7 @@ unset($_SESSION['success_message']);
 unset($_SESSION['error_message']);
 
 // Ambil data pemesanan
-$stmt = $pdo->prepare("SELECT pemesanan.*, bus.tanggal_berangkat, bus.jam_berangkat, po.nama_po, rute.kota_asal, rute.kota_tujuan,
+$stmt = $pdo->prepare("SELECT pemesanan.*, bus.tanggal_berangkat, bus.jam_berangkat, bus.kode_perjalanan, bus.plat_nomor, po.nama_po, rute.kota_asal, rute.kota_tujuan,
                        COUNT(detail_kursi_pesan.kursi_id) as jumlah_penumpang
                        FROM pemesanan 
                        JOIN bus ON pemesanan.bus_id = bus.id 
@@ -81,6 +81,8 @@ include '../components/navbar.php';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Detail Pemesanan - BeBuss</title>
+    <link rel="icon" type="image/x-icon" href="../../assets/images/logo/favicon.ico">
+    <link rel="shortcut icon" type="image/x-icon" href="../../assets/images/logo/favicon.ico">
     <link rel="stylesheet" href="../../assets/css/modern.css">
 </head>
 <body>
@@ -111,6 +113,14 @@ include '../components/navbar.php';
                         <div class="detail-item">
                             <span class="label">Operator Bus</span>
                             <span class="value"><?= htmlspecialchars($data['nama_po']) ?></span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="label">Kode Perjalanan</span>
+                            <span class="value"><?= htmlspecialchars($data['kode_perjalanan'] ?? 'N/A') ?></span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="label">Plat Nomor Bus</span>
+                            <span class="value"><?= htmlspecialchars($data['plat_nomor'] ?? 'N/A') ?></span>
                         </div>
                         <div class="detail-item">
                             <span class="label">Rute</span>

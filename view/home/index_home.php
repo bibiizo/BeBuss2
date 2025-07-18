@@ -96,6 +96,7 @@ $date = $_GET['date'] ?? '';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pesan Tiket Bus Online - BeBuss</title>
     <link rel="icon" type="image/x-icon" href="../../assets/images/logo/favicon.ico">
+    <link rel="shortcut icon" type="image/x-icon" href="../../assets/images/logo/favicon.ico">
     <link rel="stylesheet" href="../../assets/css/modern.css">
 </head>
 <body>
@@ -128,8 +129,11 @@ $date = $_GET['date'] ?? '';
     </header>
 
     <main class="container">
-        <!-- Search Section -->
-        <section class="search-section">
+        <!-- Search Section Placeholder -->
+        <div class="search-section-placeholder" id="searchPlaceholder"></div>
+        
+        <!-- Search Section - Back inside main for proper flow -->
+        <section class="search-section" id="searchSection">
             <div class="search-form-container">
                 <form class="search-form" id="searchForm" onsubmit="return false;">
                     <div class="form-group">
@@ -152,7 +156,7 @@ $date = $_GET['date'] ?? '';
                     </div>
                     <div class="form-group">
                         <button type="button" class="btn btn-primary btn-full search-bus-btn">
-                            🚌 Cari Bus
+                            Cari Bus
                         </button>
                     </div>
                 </form>
@@ -426,6 +430,57 @@ $date = $_GET['date'] ?? '';
         elements.dateInput.addEventListener('change', fetchPO);
     }
 
+    // Smart Search Section Scroll Behavior
+    function setupSmartSearchScroll() {
+        const searchSection = document.getElementById('searchSection');
+        const searchPlaceholder = document.getElementById('searchPlaceholder');
+        const navbar = document.querySelector('.navbar');
+        
+        if (!searchSection || !searchPlaceholder) return;
+        
+        // Get initial position of search section
+        const searchSectionTop = searchSection.offsetTop;
+        const navbarHeight = navbar ? navbar.offsetHeight : (window.innerWidth <= 768 ? 65 : 75);
+        
+        function handleScroll() {
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            const shouldFix = scrollTop >= (searchSectionTop - navbarHeight);
+            
+            if (shouldFix) {
+                // Make search section fixed
+                searchSection.classList.add('fixed');
+                searchPlaceholder.classList.add('active');
+            } else {
+                // Return to normal position
+                searchSection.classList.remove('fixed');
+                searchPlaceholder.classList.remove('active');
+            }
+        }
+        
+        // Throttle scroll events for performance
+        let ticking = false;
+        function requestTick() {
+            if (!ticking) {
+                requestAnimationFrame(() => {
+                    handleScroll();
+                    ticking = false;
+                });
+                ticking = true;
+            }
+        }
+        
+        window.addEventListener('scroll', requestTick);
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            // Recalculate positions on resize
+            setTimeout(() => {
+                searchSectionTop = searchSection.offsetTop;
+                handleScroll();
+            }, 100);
+        });
+    }
+
     // Initialize application
     function initializeApp() {
         // Setup autocomplete
@@ -435,6 +490,9 @@ $date = $_GET['date'] ?? '';
         // Setup event handlers
         setupEventListeners();
         setupPOSelectionListener(); // Attach PO card click listener to the parent container
+        
+        // Setup smart search scroll
+        setupSmartSearchScroll();
         
         // Load initial data
         fetchPO();
@@ -452,8 +510,16 @@ $date = $_GET['date'] ?? '';
         
         // Add click handlers for po-cards (replacing inline onclick)
         document.addEventListener('click', (e) => {
-            const poCard = e.target.closest('.po-card[data-booking-url]');
+            const poCard = e.target.closest('.po-card');
+            
             if (poCard) {
+                // Cek apakah card disabled
+                if (poCard.hasAttribute('data-disabled')) {
+                    // Jangan lakukan apa-apa, biarkan overlay warning yang menangani
+                    return;
+                }
+                
+                // Jika card aktif dan ada URL booking
                 const url = poCard.getAttribute('data-booking-url');
                 if (url) {
                     window.location.href = url;

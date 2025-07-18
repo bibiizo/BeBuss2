@@ -14,6 +14,7 @@ unset($_SESSION['old_input']);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Daftar - BeBuss</title>
     <link rel="icon" type="image/x-icon" href="../../assets/images/logo/favicon.ico">
+    <link rel="shortcut icon" type="image/x-icon" href="../../assets/images/logo/favicon.ico">
     <link rel="stylesheet" href="../../assets/css/modern.css">
 </head>
 <body>
@@ -21,11 +22,9 @@ unset($_SESSION['old_input']);
         <div class="card auth-card">
             <div class="auth-header">
                 <a href="../../index.php" class="brand">
-                    <img src="../../assets/images/logo/logo.png" alt="BeBuss Logo" class="auth-logo">
                     <span class="brand-text">BeBuss</span>
                 </a>
                 <h1>Buat Akun Baru</h1>
-                <p>Bergabunglah dengan kami untuk perjalanan yang lebih mudah.</p>
             </div>
 
             <?php if (!empty($errors)): ?>

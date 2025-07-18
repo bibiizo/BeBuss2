@@ -71,22 +71,6 @@ function validateProfileInput($nama, $no_hp, $jk) {
     return $errors;
 }
 
-function validatePasswordInput($new_password, $confirm_password) {
-    $errors = [];
-    
-    if (empty($new_password)) {
-        $errors[] = Config::getMessage('password_empty');
-    } elseif (strlen($new_password) < Config::PASSWORD_MIN_LENGTH) {
-        $errors[] = Config::getMessage('password_min_length');
-    }
-
-    if ($new_password !== $confirm_password) {
-        $errors[] = Config::getMessage('password_mismatch');
-    }
-
-    return $errors;
-}
-
 function redirectWithErrors($errors, $input_data = [], $type = 'profile') {
     $_SESSION["{$type}_errors"] = $errors;
     if (!empty($input_data)) {
@@ -138,26 +122,6 @@ try {
                     'no_hp' => $no_hp,
                     'jenis_kelamin' => $jk
                 ]);
-            }
-            break;
-
-        case 'update_password':
-            $new_password = $_POST['new_password'] ?? '';
-            $confirm_password = $_POST['confirm_password'] ?? '';
-
-            $password_errors = validatePasswordInput($new_password, $confirm_password);
-
-            if (!empty($password_errors)) {
-                redirectWithErrors($password_errors, [], 'password');
-            }
-
-            $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
-            $success = $userModel->updatePassword($user_id, $hashed_password);
-
-            if ($success) {
-                redirectWithSuccess("Password berhasil diperbarui.", 'password');
-            } else {
-                redirectWithErrors(["Gagal memperbarui password. Terjadi kesalahan internal."], [], 'password');
             }
             break;
 
